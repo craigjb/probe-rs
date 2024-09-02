@@ -238,11 +238,13 @@ pub fn build_loader(
 /// This will ensure that memory boundaries are honored and does unlocking, erasing and programming of the flash for you.
 ///
 /// If you are looking for more options, have a look at [download_file_with_options].
+///
+/// Returns whether flash was programmed (true), or just RAM (false)
 pub fn download_file(
     session: &mut Session,
     path: impl AsRef<Path>,
     format: impl Into<Format>,
-) -> Result<(), FileDownloadError> {
+) -> Result<bool, FileDownloadError> {
     download_file_with_options(session, path, format, DownloadOptions::default())
 }
 
@@ -251,12 +253,14 @@ pub fn download_file(
 /// This will ensure that memory boundaries are honored and does unlocking, erasing and programming of the flash for you.
 ///
 /// If you are looking for a simple version without many options, have a look at [download_file].
+///
+/// Returns whether flash was programmed (true) or just RAM (false)
 pub fn download_file_with_options(
     session: &mut Session,
     path: impl AsRef<Path>,
     format: impl Into<Format>,
     options: DownloadOptions,
-) -> Result<(), FileDownloadError> {
+) -> Result<bool, FileDownloadError> {
     let loader = build_loader(session, path, format.into(), None)?;
 
     loader

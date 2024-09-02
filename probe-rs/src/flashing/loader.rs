@@ -420,11 +420,13 @@ impl FlashLoader {
     /// Writes all the stored data chunks to flash.
     ///
     /// Requires a session with an attached target that has a known flash algorithm.
+    ///
+    /// Returns whether flash was written (true) or only RAM (false)
     pub fn commit(
         &self,
         session: &mut Session,
         mut options: DownloadOptions,
-    ) -> Result<(), FlashError> {
+    ) -> Result<bool, FlashError> {
         tracing::debug!("Committing FlashLoader!");
 
         let algos = self.prepare_plan(session)?;
@@ -438,7 +440,7 @@ impl FlashLoader {
                 progress.failed_programming();
             }
 
-            return Ok(());
+            return Ok(false);
         }
 
         let progress = options
@@ -450,6 +452,7 @@ impl FlashLoader {
 
         let mut do_chip_erase = options.do_chip_erase;
         let mut did_chip_erase = false;
+        let mut did_program_flash = false;
 
         if options.preverify && do_chip_erase {
             // This is the simpler solution. We could pre-verify everything up front but it's
@@ -518,6 +521,7 @@ impl FlashLoader {
                     options.skip_erase || did_chip_erase,
                     options.verify,
                 )?;
+                did_program_flash = true;
             }
         }
 
@@ -578,7 +582,7 @@ impl FlashLoader {
             self.verify_ram(session)?;
         }
 
-        Ok(())
+        Ok(did_program_flash)
     }
 
     fn prepare_plan(

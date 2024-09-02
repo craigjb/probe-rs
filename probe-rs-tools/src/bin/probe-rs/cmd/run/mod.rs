@@ -116,6 +116,7 @@ impl Cmd {
 
         let core_id = rtt_client.core_id();
 
+        let mut programmed_flash = false;
         if run_download {
             let loader = build_loader(
                 &mut session,
@@ -123,7 +124,7 @@ impl Cmd {
                 self.shared_options.format_options,
                 None,
             )?;
-            run_flash_download(
+            programmed_flash = run_flash_download(
                 &mut session,
                 &self.shared_options.path,
                 &self.shared_options.download_options,
@@ -140,7 +141,10 @@ impl Cmd {
 
         rtt_client.timezone_offset = timestamp_offset;
 
-        if run_download {
+        // If the program was written to flash, then we expect the RTT header to get loaded from
+        // flash into RAM on reset. However, if only RAM was written, then the header must not be
+        // cleared.
+        if run_download && programmed_flash {
             // We ended up resetting the MCU, throw away old RTT data and prevent
             // printing warnings when it initialises.
             let mut core = session.core(core_id)?;

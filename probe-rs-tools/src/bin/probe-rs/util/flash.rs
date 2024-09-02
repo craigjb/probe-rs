@@ -18,6 +18,8 @@ use probe_rs::{
 
 /// Performs the flash download with the given loader. Ensure that the loader has the data to load already stored.
 /// This function also manages the update and display of progress bars.
+///
+/// Returns whether flash was programmed (true) or just RAM (false)
 pub fn run_flash_download(
     session: &mut Session,
     path: impl AsRef<Path>,
@@ -25,7 +27,7 @@ pub fn run_flash_download(
     probe_options: &LoadedProbeOptions,
     loader: FlashLoader,
     do_chip_erase: bool,
-) -> Result<(), OperationError> {
+) -> Result<bool, OperationError> {
     let mut options = DownloadOptions::default();
     options.keep_unwritten_bytes = download_options.restore_unwritten;
     options.dry_run = probe_options.dry_run();
@@ -131,14 +133,15 @@ pub fn run_flash_download(
     // Start timer.
     let flash_timer = Instant::now();
 
-    loader
-        .commit(session, options)
-        .map_err(|error| OperationError::FlashingFailed {
-            source: error,
-            target: Box::new(session.target().clone()),
-            target_spec: probe_options.chip(),
-            path: path.as_ref().to_path_buf(),
-        })?;
+    let programmed_flash =
+        loader
+            .commit(session, options)
+            .map_err(|error| OperationError::FlashingFailed {
+                source: error,
+                target: Box::new(session.target().clone()),
+                target_spec: probe_options.chip(),
+                path: path.as_ref().to_path_buf(),
+            })?;
 
     // If we don't do this, the progress bars disappear.
     logging::clear_progress_bar();
@@ -149,7 +152,7 @@ pub fn run_flash_download(
         flash_timer.elapsed().as_secs_f32(),
     ));
 
-    Ok(())
+    Ok(programmed_flash)
 }
 
 /// Builds a new flash loader for the given target and path. This
