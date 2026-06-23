@@ -378,7 +378,7 @@ impl RawDapAccess for Glasgow {
             } else {
                 self.device.clear_reset()?;
             }
-            Ok(0)
+            Ok(0xffff_ffff)
         }
     }
 
